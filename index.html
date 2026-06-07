@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rastreador de Hábitos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0f1117;
+            --surface: #1a1d27;
+            --border: #2a2d3a;
+            --accent: #6c63ff;
+            --accent-hover: #574fd6;
+            --text: #e8e9f0;
+            --muted: #6b6f85;
+            --error: #ff5c5c;
+            --success: #4caf7d;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .card h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .card p.subtitle {
+            color: var(--muted);
+            font-size: 0.9rem;
+            margin-bottom: 32px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 4px;
+            margin-bottom: 28px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--muted);
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: var(--surface);
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .form { display: flex; flex-direction: column; gap: 16px; }
+
+        .form input {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 14px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form input:focus { border-color: var(--accent); }
+        .form input::placeholder { color: var(--muted); }
+
+        .btn {
+            padding: 13px;
+            border: none;
+            border-radius: 8px;
+            background: var(--accent);
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 4px;
+        }
+
+        .btn:hover { background: var(--accent-hover); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .msg {
+            font-size: 0.85rem;
+            padding: 10px 14px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .msg.error { background: rgba(255,92,92,0.1); color: var(--error); display: block; }
+        .msg.success { background: rgba(76,175,125,0.1); color: var(--success); display: block; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>Rastreador de Hábitos</h1>
+    <p class="subtitle">Construa consistência, um dia de cada vez.</p>
+
+    <div class="tabs">
+        <button class="tab active" onclick="mostrarAba('login')">Entrar</button>
+        <button class="tab" onclick="mostrarAba('cadastro')">Criar conta</button>
+    </div>
+
+    <!-- Login -->
+    <div id="aba-login">
+        <div class="form">
+            <input id="login-email" type="email" placeholder="E-mail" />
+            <input id="login-senha" type="password" placeholder="Senha" />
+            <div id="login-msg" class="msg"></div>
+            <button class="btn" onclick="fazerLogin()">Entrar</button>
+        </div>
+    </div>
+
+    <!-- Cadastro -->
+    <div id="aba-cadastro" style="display:none">
+        <div class="form">
+            <input id="cad-nome" type="text" placeholder="Nome" />
+            <input id="cad-email" type="email" placeholder="E-mail" />
+            <input id="cad-senha" type="password" placeholder="Senha" />
+            <div id="cad-msg" class="msg"></div>
+            <button class="btn" onclick="fazerCadastro()">Criar conta</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { login, cadastrarUsuario } from './js/api.js';
+
+    // Expõe as funções para o onclick do HTML
+    window.mostrarAba = (aba) => {
+        document.getElementById('aba-login').style.display    = aba === 'login'    ? 'block' : 'none';
+        document.getElementById('aba-cadastro').style.display = aba === 'cadastro' ? 'block' : 'none';
+        document.querySelectorAll('.tab').forEach((t, i) => {
+            t.classList.toggle('active', (aba === 'login' && i === 0) || (aba === 'cadastro' && i === 1));
+        });
+        limparMensagens();
+    };
+
+    window.fazerLogin = async () => {
+        const email = document.getElementById('login-email').value.trim();
+        const senha = document.getElementById('login-senha').value;
+        const msg   = document.getElementById('login-msg');
+
+        try {
+            await login(email, senha);
+            window.location.href = 'dashboard.html';
+        } catch (e) {
+            msg.textContent = 'E-mail ou senha incorretos.';
+            msg.className   = 'msg error';
+        }
+    };
+
+    window.fazerCadastro = async () => {
+        const nome  = document.getElementById('cad-nome').value.trim();
+        const email = document.getElementById('cad-email').value.trim();
+        const senha = document.getElementById('cad-senha').value;
+        const msg   = document.getElementById('cad-msg');
+
+        try {
+            await cadastrarUsuario(nome, email, senha);
+            window.location.href = 'dashboard.html'; // já logado pelo api.js
+        } catch (e) {
+            msg.textContent = 'Erro ao criar conta. Verifique os dados.';
+            msg.className   = 'msg error';
+        }
+    };
+
+    function limparMensagens() {
+        ['login-msg', 'cad-msg'].forEach(id => {
+            const el = document.getElementById(id);
+            el.textContent = '';
+            el.className   = 'msg';
+        });
+    }
+
+    // Se já tem token, vai direto pro dashboard
+    if (localStorage.getItem('token')) {
+        window.location.href = 'dashboard.html';
+    }
+</script>
+
+</body>
+</html>

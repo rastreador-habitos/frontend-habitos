@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — Rastreador de Hábitos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0f1117;
+            --surface: #1a1d27;
+            --surface2: #21253a;
+            --border: #2a2d3a;
+            --accent: #6c63ff;
+            --accent-hover: #574fd6;
+            --text: #e8e9f0;
+            --muted: #6b6f85;
+            --error: #ff5c5c;
+            --success: #4caf7d;
+            --warning: #f0a500;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ── Header ── */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 32px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        header h1 { font-size: 1.1rem; font-weight: 600; }
+
+        .btn-logout {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            font-family: inherit;
+            font-size: 0.85rem;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-logout:hover { border-color: var(--error); color: var(--error); }
+
+        /* ── Main ── */
+        main { max-width: 900px; margin: 0 auto; padding: 36px 24px; }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+        }
+
+        .top-bar h2 { font-size: 1.3rem; font-weight: 600; }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-primary:hover { background: var(--accent-hover); }
+
+        /* ── Cards ── */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: border-color 0.2s;
+        }
+        .card:hover { border-color: #3a3d50; }
+        .card.inativo { opacity: 0.55; }
+
+        .card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .card-title { font-size: 1rem; font-weight: 600; }
+        .card-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+
+        .badge {
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 3px 9px;
+            border-radius: 20px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .badge.ativo   { background: rgba(76,175,125,0.15); color: var(--success); }
+        .badge.inativo { background: rgba(255,92,92,0.12);  color: var(--error); }
+
+        .streak {
+            font-size: 0.85rem;
+            color: var(--warning);
+            font-weight: 500;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .btn-action {
+            flex: 1;
+            padding: 8px 4px;
+            border-radius: 7px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--muted);
+            font-family: inherit;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-action:hover { background: var(--surface2); color: var(--text); }
+        .btn-action.checkin { border-color: var(--accent); color: var(--accent); }
+        .btn-action.checkin:hover { background: rgba(108,99,255,0.1); }
+        .btn-action.danger:hover  { border-color: var(--error); color: var(--error); }
+
+        /* ── Empty state ── */
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--muted);
+        }
+        .empty p { margin-top: 8px; font-size: 0.9rem; }
+
+        /* ── Toast ── */
+        #toast {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s;
+            pointer-events: none;
+        }
+        #toast.show { opacity: 1; transform: translateY(0); }
+
+        /* ── Modal ── */
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .overlay.open { display: flex; }
+
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .modal h3 { font-size: 1.1rem; margin-bottom: 20px; }
+
+        .modal input, .modal textarea {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 11px 14px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+            margin-bottom: 12px;
+        }
+        .modal input:focus, .modal textarea:focus { border-color: var(--accent); }
+        .modal textarea { resize: vertical; min-height: 80px; }
+        .modal input::placeholder, .modal textarea::placeholder { color: var(--muted); }
+
+        .modal-actions { display: flex; gap: 10px; margin-top: 4px; }
+
+        .btn-secondary {
+            flex: 1;
+            padding: 11px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--muted);
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover { color: var(--text); border-color: #3a3d50; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🔥 Rastreador de Hábitos</h1>
+    <button class="btn-logout" onclick="sair()">Sair</button>
+</header>
+
+<main>
+    <div class="top-bar">
+        <h2>Meus Hábitos</h2>
+        <button class="btn-primary" onclick="abrirModal()">+ Novo hábito</button>
+    </div>
+    <div class="grid" id="grid"></div>
+</main>
+
+<div id="toast"></div>
+
+<!-- Modal criar/editar -->
+<div class="overlay" id="overlay">
+    <div class="modal">
+        <h3 id="modal-titulo">Novo hábito</h3>
+        <input id="campo-nome" type="text" placeholder="Nome do hábito" />
+        <textarea id="campo-desc" placeholder="Descrição (opcional)"></textarea>
+        <div class="modal-actions">
+            <button class="btn-secondary" onclick="fecharModal()">Cancelar</button>
+            <button class="btn-primary" style="flex:1" onclick="salvarHabito()">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import {
+        listarHabitos, cadastrarHabito, alterarHabito,
+        deletarHabito, alterarStatus, efetuarCheckin, buscarStreak
+    } from './js/api.js';
+
+    // ── Guarda o id do hábito sendo editado (null = criação)
+    let editandoId = null;
+
+    // ── Redireciona se não tiver token
+    if (!localStorage.getItem('token')) window.location.href = 'index.html';
+
+    // ── Carrega e renderiza os hábitos
+    async function carregar() {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = '';
+
+        let habitos = [];
+        try {
+            habitos = await listarHabitos();
+        } catch {
+            // Backend retorna 404 quando lista está vazia
+        }
+
+        if (habitos.length === 0) {
+            grid.innerHTML = `
+                <div class="empty" style="grid-column:1/-1">
+                    <span style="font-size:2.5rem">📋</span>
+                    <p>Nenhum hábito ainda.<br>Crie o seu primeiro!</p>
+                </div>`;
+            return;
+        }
+
+        // Busca o streak de cada hábito em paralelo
+        const streaks = await Promise.allSettled(
+            habitos.map(h => buscarStreak(h.habitosID))
+        );
+
+        habitos.forEach((h, i) => {
+            const streak = streaks[i].status === 'fulfilled' ? streaks[i].value : 0;
+            grid.appendChild(criarCard(h, streak));
+        });
+    }
+
+    // ── Monta o card de um hábito
+    function criarCard(h, streak) {
+        const div = document.createElement('div');
+        div.className = `card${h.status ? '' : ' inativo'}`;
+        div.innerHTML = `
+            <div class="card-header">
+                <span class="card-title">${h.nome}</span>
+                <span class="badge ${h.status ? 'ativo' : 'inativo'}">${h.status ? 'Ativo' : 'Inativo'}</span>
+            </div>
+            ${h.descricao ? `<p class="card-desc">${h.descricao}</p>` : ''}
+            <p class="streak">🔥 ${streak} dia${streak !== 1 ? 's' : ''} de sequência</p>
+            <div class="card-actions">
+                ${h.status ? `<button class="btn-action checkin" onclick="checkin('${h.habitosID}')">Check-in</button>` : ''}
+                <button class="btn-action" onclick="editar('${h.habitosID}','${h.nome}','${h.descricao || ''}')">Editar</button>
+                <button class="btn-action" onclick="toggleStatus('${h.habitosID}', ${h.status})">
+                    ${h.status ? 'Pausar' : 'Retomar'}
+                </button>
+                <button class="btn-action danger" onclick="excluir('${h.habitosID}')">Excluir</button>
+            </div>`;
+        return div;
+    }
+
+    // ── Ações dos cards
+    window.checkin = async (id) => {
+        try {
+            const streak = await efetuarCheckin(id);
+            toast(`✅ Check-in feito! Sequência: ${streak} dia(s)`);
+            carregar();
+        } catch (e) {
+            toast(e.message || 'Erro ao fazer check-in', true);
+        }
+    };
+
+    window.editar = (id, nome, desc) => {
+        editandoId = id;
+        document.getElementById('modal-titulo').textContent = 'Editar hábito';
+        document.getElementById('campo-nome').value = nome;
+        document.getElementById('campo-desc').value = desc;
+        document.getElementById('overlay').classList.add('open');
+    };
+
+    window.toggleStatus = async (id, statusAtual) => {
+        try {
+            await alterarStatus(id, !statusAtual);
+            toast(statusAtual ? 'Hábito pausado' : 'Hábito retomado!');
+            carregar();
+        } catch (e) {
+            toast(e.message || 'Erro ao alterar status', true);
+        }
+    };
+
+    window.excluir = async (id) => {
+        if (!confirm('Excluir este hábito?')) return;
+        try {
+            await deletarHabito(id);
+            toast('Hábito excluído');
+            carregar();
+        } catch (e) {
+            toast(e.message || 'Erro ao excluir', true);
+        }
+    };
+
+    // ── Modal
+    window.abrirModal = () => {
+        editandoId = null;
+        document.getElementById('modal-titulo').textContent = 'Novo hábito';
+        document.getElementById('campo-nome').value = '';
+        document.getElementById('campo-desc').value = '';
+        document.getElementById('overlay').classList.add('open');
+    };
+
+    window.fecharModal = () => {
+        document.getElementById('overlay').classList.remove('open');
+    };
+
+    window.salvarHabito = async () => {
+        const nome = document.getElementById('campo-nome').value.trim();
+        const desc = document.getElementById('campo-desc').value.trim();
+
+        if (!nome) { toast('O nome é obrigatório', true); return; }
+
+        try {
+            if (editandoId) {
+                await alterarHabito(editandoId, nome, desc);
+                toast('Hábito atualizado!');
+            } else {
+                await cadastrarHabito(nome, desc);
+                toast('Hábito criado!');
+            }
+            fecharModal();
+            carregar();
+        } catch (e) {
+            toast(e.message || 'Erro ao salvar', true);
+        }
+    };
+
+    // ── Logout
+    window.sair = () => {
+        localStorage.removeItem('token');
+        window.location.href = 'index.html';
+    };
+
+    // ── Toast (notificação rápida no canto)
+    function toast(msg, erro = false) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.style.borderColor = erro ? 'var(--error)' : 'var(--success)';
+        el.classList.add('show');
+        setTimeout(() => el.classList.remove('show'), 3000);
+    }
+
+    // ── Fechar modal clicando fora
+    document.getElementById('overlay').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('overlay')) fecharModal();
+    });
+
+    // ── Inicia
+    carregar();
+</script>
+
+</body>
+</html>
