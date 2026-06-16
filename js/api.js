@@ -35,19 +35,19 @@ async function request(method, path, body = null, auth = true) {
     try {
         return JSON.parse(text);
     } catch {
-        return text; // token do login chega como string pura
+        return text;
     }
 }
 
 // ─── Usuário ────────────────────────────────────────────────
 
 export async function login(email, senha) {
-    const token = await request('POST', '/usuario/login', { email, senha }, false);
-    localStorage.setItem('token', token);
+    const data = await request('POST', '/usuario/login', { email, password: senha }, false);
+    localStorage.setItem('token', 'Bearer ' + data.token);
 }
 
 export async function cadastrarUsuario(nome, email, senha) {
-    await request('POST', '/usuario', { nome, email, senha }, false);
+    await request('POST', '/usuario', { username: nome, email, password: senha }, false);
     await login(email, senha);
 }
 
